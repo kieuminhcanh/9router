@@ -84,6 +84,24 @@ export function toPageNumber(offset, maxResults) {
   return Math.floor(offset / maxResults) + 1;
 }
 
+/**
+ * Forward every client-supplied provider_option into the query string as-is,
+ * except reserved keys the builder sets explicitly. Mirrors the STT
+ * "forward all client fields" philosophy — flexible, no per-param whitelist.
+ * @param {URLSearchParams} qp
+ * @param {SearchRequestParams} params
+ * @param {Set<string>} reserved
+ */
+function appendProviderOptions(qp, params, reserved) {
+  const opts = params.providerOptions;
+  if (!opts || typeof opts !== "object") return;
+  for (const [k, v] of Object.entries(opts)) {
+    if (reserved.has(k)) continue;
+    if (v === null || v === undefined || v === "") continue;
+    qp.set(k, String(v));
+  }
+}
+
 // ── Provider Request Builders ───────────────────────────────────────────
 
 function buildSerperRequest(config, params) {
@@ -337,6 +355,8 @@ function buildPexelsRequest(config, params) {
   });
   const page = toPageNumber(params.offset, params.maxResults);
   if (page) qp.set("page", String(page));
+  // Forward any extra Pexels param (orientation, size, color, locale, ...)
+  appendProviderOptions(qp, params, new Set(["query", "per_page", "baseUrl"]));
   return {
     url: `${resolveBaseUrl(config, params)}${endpoint}?${qp}`,
     init: {
@@ -359,6 +379,9 @@ function buildPixabayRequest(config, params) {
   const page = toPageNumber(params.offset, params.maxResults);
   if (page) qp.set("page", String(page));
   if (params.language) qp.set("lang", params.language);
+  // Forward any extra Pixabay param (orientation, category, colors, order, ...);
+  // overrides the defaults above (image_type/lang/page) but not key/q/per_page.
+  appendProviderOptions(qp, params, new Set(["key", "q", "per_page", "baseUrl"]));
   return {
     url: `${resolveBaseUrl(config, params)}${endpoint}?${qp}`,
     init: {
