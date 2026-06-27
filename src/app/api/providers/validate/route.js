@@ -252,6 +252,14 @@ export async function POST(request) {
       }
 
       switch (provider) {
+        case "composio": {
+          const composioRes = await fetch("https://backend.composio.dev/api/v3.1/toolkits", {
+            headers: { "x-api-key": apiKey },
+          });
+          isValid = composioRes.status !== 401 && composioRes.status !== 403;
+          break;
+        }
+
         case "openai":
           const openaiRes = await fetch("https://api.openai.com/v1/models", {
             headers: { "Authorization": `Bearer ${apiKey}` },

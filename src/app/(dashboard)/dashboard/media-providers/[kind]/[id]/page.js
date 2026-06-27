@@ -13,6 +13,7 @@ import { EmbeddingExampleCard } from "./components/EmbeddingExampleCard";
 import { TtsExampleCard } from "./components/TtsExampleCard";
 import { GenericExampleCard } from "./components/GenericExampleCard";
 import { SttExampleCard } from "./components/SttExampleCard";
+import { ComposioExampleCard } from "./components/ComposioExampleCard";
 
 // MediaProviderDetailPage
 export default function MediaProviderDetailPage() {
@@ -192,6 +193,7 @@ export default function MediaProviderDetailPage() {
       )}
       {kind === "tts" && <TtsExampleCard providerId={id} />}
       {kind === "stt" && !isCustom && <SttExampleCard providerId={id} />}
+      {kind === "tools" && <ComposioExampleCard providerId={id} />}
       {!isCustom && KIND_EXAMPLE_CONFIG[kind] && <GenericExampleCard providerId={id} kind={kind} />}
 
       {isCustom && (

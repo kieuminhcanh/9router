@@ -79,6 +79,7 @@ export const MEDIA_PROVIDER_KINDS = [
   { id: "webFetch",    label: "Web Fetch",      icon: "language",          endpoint: { method: "POST", path: "/v1/web/fetch" } },
   { id: "video",       label: "Video",          icon: "movie",             endpoint: { method: "POST", path: "/v1/video/generations" } },
   { id: "music",       label: "Music",          icon: "music_note",        endpoint: { method: "POST", path: "/v1/audio/music" } },
+  { id: "tools",       label: "Tools",          icon: "build",             endpoint: { method: "POST", path: "/v1/tools/composio" } },
 ];
 
 export const OPENAI_COMPATIBLE_PREFIX = "openai-compatible-";

@@ -96,6 +96,7 @@ import p93 from "./xiaomi-tokenplan.js";
 import p94 from "./youcom.js";
 import p95 from "./pexels.js";
 import p96 from "./pixabay.js";
+import p97 from "./composio.js";
 
 export default [
   p0,
@@ -194,5 +195,6 @@ export default [
   p93,
   p94,
   p95,
-  p96
+  p96,
+  p97
 ];
