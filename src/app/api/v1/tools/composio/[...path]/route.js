@@ -1,13 +1,15 @@
-import { getProviderCredentials } from "@/sse/services/auth.js";
+import { getProviderCredentials, extractApiKey } from "@/sse/services/auth.js";
+import { getSettings, getProviderConnections, getApiKeyByValue } from "@/lib/localDb";
 
 // Transparent reverse-proxy for the Composio REST API.
 // Client hits /v1/tools/composio/<path> -> forwarded to backend.composio.dev/api/v3.1/<path>
-// with a stored Composio key injected. One base URL, one place to hold the secrets.
+// with a stored Composio key injected. One base URL, no Composio key on the client.
 //
-// Multi-account: keys live in providerConnections (provider "composio"), managed in
-// dashboard > Media Providers > Tools. Account selection reuses getProviderCredentials:
-//   - default: fill-first (highest-priority connection)
-//   - pin one: client sends header x-connection-id: <connectionId>
+// Access control (when settings.requireApiKey is on): the request must carry a valid
+// 9router API key (Authorization: Bearer ...). Only Composio connections bound to that
+// key (providerSpecificData.allowedApiKeyId) are usable, and they round-robin among
+// themselves. No bound connection -> 403. This is how multiple Composio projects stay
+// isolated per API key. x-connection-id can still pin one connection within that set.
 // ponytail: plain fetch; swap to proxyAwareFetch if Composio ever IP-blocks us.
 
 const COMPOSIO_BASE = "https://backend.composio.dev/api/v3.1";
@@ -26,8 +28,25 @@ export async function OPTIONS() {
 }
 
 async function proxy(request, { params }) {
+  let restrictConnectionIds = null;
+
+  const settings = await getSettings();
+  if (settings.requireApiKey) {
+    const key = extractApiKey(request);
+    if (!key) return Response.json({ error: "Missing API key" }, { status: 401 });
+    const keyRecord = await getApiKeyByValue(key);
+    if (!keyRecord || !keyRecord.isActive) return Response.json({ error: "Invalid API key" }, { status: 401 });
+
+    const conns = await getProviderConnections({ provider: "composio", isActive: true });
+    const allowed = conns.filter((c) => c.providerSpecificData?.allowedApiKeyId === keyRecord.id).map((c) => c.id);
+    if (allowed.length === 0) {
+      return Response.json({ error: "No Composio connection is authorized for this API key" }, { status: 403 });
+    }
+    restrictConnectionIds = new Set(allowed);
+  }
+
   const preferredConnectionId = request.headers.get("x-connection-id") || null;
-  const credentials = await getProviderCredentials("composio", null, null, { preferredConnectionId });
+  const credentials = await getProviderCredentials("composio", null, null, { preferredConnectionId, restrictConnectionIds });
   if (!credentials?.apiKey) {
     return Response.json({ error: "No Composio API key configured" }, { status: 502 });
   }

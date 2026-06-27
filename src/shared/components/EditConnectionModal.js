@@ -6,6 +6,7 @@ import Modal from "@/shared/components/Modal";
 import Input from "@/shared/components/Input";
 import Button from "@/shared/components/Button";
 import Badge from "@/shared/components/Badge";
+import Select from "@/shared/components/Select";
 import { isOpenAICompatibleProvider, isAnthropicCompatibleProvider } from "@/shared/constants/providers";
 
 export default function EditConnectionModal({ isOpen, connection, proxyPools, onSave, onClose }) {
@@ -21,6 +22,8 @@ export default function EditConnectionModal({ isOpen, connection, proxyPools, on
     organization: "",
   });
   const [cloudflareData, setCloudflareData] = useState({ accountId: "" });
+  const [apiKeys, setApiKeys] = useState([]);
+  const [allowedApiKeyId, setAllowedApiKeyId] = useState("");
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState(null);
   const [validating, setValidating] = useState(false);
@@ -46,12 +49,17 @@ export default function EditConnectionModal({ isOpen, connection, proxyPools, on
       if (connection.provider === "cloudflare-ai" && connection.providerSpecificData) {
         setCloudflareData({ accountId: connection.providerSpecificData.accountId || "" });
       }
+      if (connection.provider === "composio") {
+        setAllowedApiKeyId(connection.providerSpecificData?.allowedApiKeyId || "");
+        fetch("/api/keys").then((r) => r.json()).then((d) => setApiKeys(d.keys || [])).catch(() => {});
+      }
       setTestResult(null);
       setValidationResult(null);
     }
   }, [connection]);
 
   const isOAuth = connection?.authType === "oauth";
+  const isComposio = connection?.provider === "composio";
   const isAzure = connection?.provider === "azure";
   const isCloudflareAi = connection?.provider === "cloudflare-ai";
   const isCompatible = connection
@@ -150,7 +158,11 @@ export default function EditConnectionModal({ isOpen, connection, proxyPools, on
       if (isCloudflareAi) {
         updates.providerSpecificData = { accountId: cloudflareData.accountId };
       }
-      
+      if (isComposio) {
+        // PUT merges providerSpecificData, so this won't clobber proxy fields
+        updates.providerSpecificData = { allowedApiKeyId: allowedApiKeyId || null };
+      }
+
       await onSave(updates);
     } finally {
       setSaving(false);
@@ -241,6 +253,15 @@ export default function EditConnectionModal({ isOpen, connection, proxyPools, on
               />
             </div>
           </div>
+        )}
+
+        {isComposio && (
+          <Select
+            label="Allowed API Key"
+            value={allowedApiKeyId}
+            onChange={(e) => setAllowedApiKeyId(e.target.value)}
+            options={[{ value: "", label: "None (not reachable via key)" }, ...apiKeys.map((k) => ({ value: k.id, label: k.name }))]}
+          />
         )}
 
         {!isCompatible && !isAzure && !isCloudflareAi && (

@@ -12,7 +12,7 @@ export default {
     textIcon: "CO",
     website: "https://composio.dev",
     notice: {
-      apiKeyUrl: "https://app.composio.dev/developers"
+      apiKeyUrl: "https://dashboard.composio.dev"
     }
   },
   category: "apikey",

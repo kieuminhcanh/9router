@@ -196,10 +196,17 @@ ConnectionRow.propTypes = {
 // ── AddApiKeyModal ─────────────────────────────────────────────
 function AddApiKeyModal({ isOpen, provider, providerName, proxyPools, onSave, onClose }) {
   const NONE = "__none__";
-  const [formData, setFormData] = useState({ name: "", apiKey: "", priority: 1, proxyPoolId: NONE });
+  const isComposio = provider === "composio";
+  const [formData, setFormData] = useState({ name: "", apiKey: "", priority: 1, proxyPoolId: NONE, allowedApiKeyId: "" });
+  const [apiKeys, setApiKeys] = useState([]);
   const [validating, setValidating] = useState(false);
   const [validationResult, setValidationResult] = useState(null);
   const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (!isOpen || !isComposio) return;
+    fetch("/api/keys").then((r) => r.json()).then((d) => setApiKeys(d.keys || [])).catch(() => {});
+  }, [isOpen, isComposio]);
 
   const handleValidate = async () => {
     setValidating(true);
@@ -238,6 +245,7 @@ function AddApiKeyModal({ isOpen, provider, providerName, proxyPools, onSave, on
         priority: formData.priority,
         proxyPoolId: formData.proxyPoolId === NONE ? null : formData.proxyPoolId,
         testStatus: isValid ? "active" : "unknown",
+        ...(isComposio ? { allowedApiKeyId: formData.allowedApiKeyId || null } : {}),
       });
     } finally { setSaving(false); }
   };
@@ -273,6 +281,10 @@ function AddApiKeyModal({ isOpen, provider, providerName, proxyPools, onSave, on
         </div>
         <Select label="Proxy Pool" value={formData.proxyPoolId} onChange={(e) => setFormData({ ...formData, proxyPoolId: e.target.value })}
           options={[{ value: NONE, label: "None" }, ...(proxyPools || []).map((p) => ({ value: p.id, label: p.name }))]} />
+        {isComposio && (
+          <Select label="Allowed API Key" value={formData.allowedApiKeyId} onChange={(e) => setFormData({ ...formData, allowedApiKeyId: e.target.value })}
+            options={[{ value: "", label: "None (not reachable via key)" }, ...apiKeys.map((k) => ({ value: k.id, label: k.name }))]} />
+        )}
         <div className="flex gap-2">
           <Button onClick={handleSubmit} fullWidth disabled={!formData.name || !formData.apiKey || saving}>
             {saving ? "Saving..." : "Save"}

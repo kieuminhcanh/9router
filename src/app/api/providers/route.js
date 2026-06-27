@@ -185,6 +185,11 @@ export async function POST(request) {
       mergedProviderSpecificData.proxyPoolId = proxyPoolId;
     }
 
+    // Composio: bind this connection to a 9router API key (request must carry that key to use it)
+    if (body.allowedApiKeyId) {
+      mergedProviderSpecificData.allowedApiKeyId = body.allowedApiKeyId;
+    }
+
     const newConnection = await createProviderConnection({
       provider,
       authType: isWebCookieProvider ? "cookie" : "apikey",
