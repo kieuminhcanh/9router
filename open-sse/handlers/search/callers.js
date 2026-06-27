@@ -327,6 +327,47 @@ function buildSearxngRequest(config, params) {
   };
 }
 
+function buildPexelsRequest(config, params) {
+  if (!params.token) throw new Error("Pexels requires an API key");
+  const isVideo = params.searchType === "video";
+  const endpoint = isVideo ? "/videos/search" : "/v1/search";
+  const qp = new URLSearchParams({
+    query: params.query,
+    per_page: String(Math.min(params.maxResults, 80)),
+  });
+  const page = toPageNumber(params.offset, params.maxResults);
+  if (page) qp.set("page", String(page));
+  return {
+    url: `${resolveBaseUrl(config, params)}${endpoint}?${qp}`,
+    init: {
+      method: "GET",
+      headers: { Accept: "application/json", Authorization: params.token },
+    },
+  };
+}
+
+function buildPixabayRequest(config, params) {
+  if (!params.token) throw new Error("Pixabay requires an API key");
+  const isVideo = params.searchType === "video";
+  const endpoint = isVideo ? "/videos/" : "/";
+  const qp = new URLSearchParams({
+    key: params.token,
+    q: params.query,
+    per_page: String(Math.min(Math.max(params.maxResults, 3), 200)),
+  });
+  if (!isVideo) qp.set("image_type", "photo");
+  const page = toPageNumber(params.offset, params.maxResults);
+  if (page) qp.set("page", String(page));
+  if (params.language) qp.set("lang", params.language);
+  return {
+    url: `${resolveBaseUrl(config, params)}${endpoint}?${qp}`,
+    init: {
+      method: "GET",
+      headers: { Accept: "application/json" },
+    },
+  };
+}
+
 // ── Dispatcher ──────────────────────────────────────────────────────────
 
 const BUILDERS = {
@@ -340,6 +381,8 @@ const BUILDERS = {
   "searchapi": buildSearchApiRequest,
   "youcom": buildYouComRequest,
   "searxng": buildSearxngRequest,
+  "pexels": buildPexelsRequest,
+  "pixabay": buildPixabayRequest,
 };
 
 /**

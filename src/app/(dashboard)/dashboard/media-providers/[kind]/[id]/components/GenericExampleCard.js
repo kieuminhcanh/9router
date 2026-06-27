@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Card } from "@/shared/components";
-import { MEDIA_PROVIDER_KINDS, getProviderAlias, resolveProviderId } from "@/shared/constants/providers";
+import { MEDIA_PROVIDER_KINDS, getProviderAlias, resolveProviderId, AI_PROVIDERS } from "@/shared/constants/providers";
 import { getModelsByProviderId, getModelKind } from "@/shared/constants/models";
 import { useCopyToClipboard } from "@/shared/hooks/useCopyToClipboard";
 import { Row, KIND_EXAMPLE_CONFIG } from "./exampleShared";
@@ -33,7 +33,17 @@ export function GenericExampleCard({ providerId, kind }) {
   const resolvedId = resolveProviderId(providerAlias);
   const safeProviderAlias = resolvedId === providerId ? providerAlias : providerId;
   const kindConfig = MEDIA_PROVIDER_KINDS.find((k) => k.id === kind);
-  const exConfig = KIND_EXAMPLE_CONFIG[kind];
+  const baseExConfig = KIND_EXAMPLE_CONFIG[kind];
+  // search_type options are provider-driven (e.g. pexels/pixabay → image/video)
+  const searchTypes = AI_PROVIDERS[providerId]?.searchConfig?.searchTypes;
+  const exConfig = baseExConfig && kind === "webSearch" && searchTypes?.length
+    ? {
+        ...baseExConfig,
+        extraFields: baseExConfig.extraFields.map((f) =>
+          f.key === "search_type" ? { ...f, default: searchTypes[0], options: searchTypes } : f
+        ),
+      }
+    : baseExConfig;
   const safeExConfig = exConfig || {};
 
   // Get models for this kind (e.g., type="image")

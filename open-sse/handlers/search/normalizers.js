@@ -200,6 +200,67 @@ function normalizeSearxng(data, _query, _searchType) {
   return { results, totalResults: results.length };
 }
 
+function normalizePexels(data, _query, searchType) {
+  const now = new Date().toISOString();
+  const isVideo = searchType === "video";
+  const items = isVideo ? data.videos : data.photos;
+  if (!Array.isArray(items)) return { results: [], totalResults: null };
+  const results = items.map((item, idx) => {
+    if (isVideo) {
+      const file = Array.isArray(item.video_files)
+        ? (item.video_files.find((f) => f.quality === "hd") || item.video_files[0])
+        : null;
+      return makeResult("pexels", {
+        title: `Video by ${item.user?.name || "unknown"}`,
+        url: file?.link || item.url,
+        snippet: `${item.width}x${item.height} · ${item.duration}s`,
+        author: item.user?.name || null,
+        image_url: item.image || null,
+        source_type: "video",
+      }, idx, now);
+    }
+    return makeResult("pexels", {
+      title: item.alt || `Photo by ${item.photographer || "unknown"}`,
+      url: item.url,
+      snippet: `${item.width}x${item.height} · by ${item.photographer || "unknown"}`,
+      author: item.photographer || null,
+      image_url: item.src?.large || item.src?.original || null,
+      source_type: "image",
+    }, idx, now);
+  });
+  const total = data.total_results;
+  return { results, totalResults: typeof total === "number" ? total : results.length };
+}
+
+function normalizePixabay(data, _query, searchType) {
+  const now = new Date().toISOString();
+  const items = Array.isArray(data.hits) ? data.hits : [];
+  const isVideo = searchType === "video";
+  const results = items.map((item, idx) => {
+    if (isVideo) {
+      const v = item.videos?.large || item.videos?.medium || item.videos?.small || {};
+      return makeResult("pixabay", {
+        title: item.tags || `Video ${item.id}`,
+        url: v.url || item.pageURL,
+        snippet: `${v.width || "?"}x${v.height || "?"} · ${item.duration}s · by ${item.user || "unknown"}`,
+        author: item.user || null,
+        image_url: v.thumbnail || null,
+        source_type: "video",
+      }, idx, now);
+    }
+    return makeResult("pixabay", {
+      title: item.tags || `Image ${item.id}`,
+      url: item.pageURL,
+      snippet: `${item.imageWidth}x${item.imageHeight} · by ${item.user || "unknown"}`,
+      author: item.user || null,
+      image_url: item.webformatURL || item.largeImageURL || null,
+      source_type: "image",
+    }, idx, now);
+  });
+  const total = data.totalHits;
+  return { results, totalResults: typeof total === "number" ? total : results.length };
+}
+
 const NORMALIZERS = {
   "serper": normalizeSerper,
   "brave-search": normalizeBrave,
@@ -211,6 +272,8 @@ const NORMALIZERS = {
   "searchapi": normalizeSearchApi,
   "youcom": normalizeYouCom,
   "searxng": normalizeSearxng,
+  "pexels": normalizePexels,
+  "pixabay": normalizePixabay,
 };
 
 /**
