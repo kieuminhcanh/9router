@@ -1,6 +1,6 @@
 // Antigravity image adapter - delegates to the executor for correct request
 // envelope (project, model, requestType, sessionId) and auth headers.
-import { nowSec } from "./_base.js";
+import { nowSec, buildGeminiImageConfig } from "./_base.js";
 import { getExecutor } from "../../executors/index.js";
 
 // Convert image input (data URI or raw base64) to Gemini inlineData part
@@ -39,8 +39,11 @@ export default {
       if (inlineData) parts.unshift(inlineData);
     }
 
+    // Body-driven imageConfig (aspectRatio/imageSize/personGeneration); executor merges over model-suffix default
+    const imageConfig = buildGeminiImageConfig(body);
     const chatBody = {
       contents: [{ role: "user", parts }],
+      ...(imageConfig && { imageConfig }),
     };
 
     const result = await executor.execute({

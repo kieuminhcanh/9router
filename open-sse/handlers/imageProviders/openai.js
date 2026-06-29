@@ -15,11 +15,10 @@ export default function createOpenAIAdapter(providerId) {
       return headers;
     },
     buildBody: (model, body) => {
-      const { prompt, n = 1, size = "1024x1024", quality, style, response_format } = body;
-      const full = { model, prompt, n, size };
-      if (quality) full.quality = quality;
-      if (style) full.style = style;
-      if (response_format) full.response_format = response_format;
+      const { n = 1, size = "1024x1024" } = body;
+      // Forward every client field as-is (background, moderation, output_format, user, ...);
+      // model set explicitly, n/size defaulted
+      const full = { ...body, model, n, size };
       // bodyFields whitelist (e.g. xAI accepts only model/prompt/n/response_format)
       if (Array.isArray(cfg.bodyFields)) {
         const req = {};

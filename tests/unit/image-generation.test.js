@@ -126,6 +126,31 @@ describe("handleImageGenerationCore", () => {
     expect(responseBody.data[0].b64_json).toBe("base64imagedata");
   });
 
+  it("maps size/image_size/person_generation to Gemini imageConfig", async () => {
+    global.fetch.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          candidates: [{ content: { parts: [{ inlineData: { data: "img" } }] } }],
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } }
+      )
+    );
+
+    await handleImageGenerationCore({
+      body: { prompt: "A sunset", size: "1920x1080", image_size: "2K", person_generation: "ALLOW_ADULT" },
+      modelInfo: { provider: "gemini", model: "gemini-3-pro-image-preview" },
+      credentials: { apiKey: "test-key" },
+      log: null,
+    });
+
+    const sentBody = JSON.parse(global.fetch.mock.calls[0][1].body);
+    expect(sentBody.generationConfig.imageConfig).toEqual({
+      aspectRatio: "16:9",
+      imageSize: "2K",
+      personGeneration: "ALLOW_ADULT",
+    });
+  });
+
   it("generates image with Minimax format", async () => {
     global.fetch.mockResolvedValueOnce(
       new Response(
