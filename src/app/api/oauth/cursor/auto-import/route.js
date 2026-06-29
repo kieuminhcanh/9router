@@ -73,14 +73,14 @@ const normalize = (value) => {
 };
 
 /**
- * Extract tokens via better-sqlite3 (bundled dependency).
- * This is the preferred strategy — no external CLI required.
+ * Extract tokens via node:sqlite (built-in, Node ≥22.5).
+ * This is the preferred strategy — no native module or external CLI required.
  */
-function extractTokensViaBetterSqlite(dbPath) {
-  // Dynamic require so the route stays importable even if native bindings fail
+function extractTokensViaNodeSqlite(dbPath) {
+  // Dynamic require so the route stays importable on Node < 22.5 (falls back to CLI)
   // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const Database = require("better-sqlite3");
-  const db = new Database(dbPath, { readonly: true, fileMustExist: true });
+  const { DatabaseSync } = require("node:sqlite");
+  const db = new DatabaseSync(dbPath, { readOnly: true });
 
   const query = (key) => {
     const row = db.prepare("SELECT value FROM itemTable WHERE key=? LIMIT 1").get(key);
@@ -115,7 +115,7 @@ function extractTokensViaBetterSqlite(dbPath) {
 
 /**
  * Extract tokens via sqlite3 CLI.
- * Fallback when better-sqlite3 native bindings are unavailable.
+ * Fallback when node:sqlite is unavailable (Node < 22.5).
  */
 async function extractTokensViaCLI(dbPath) {
   const normalize = (raw) => {
@@ -172,7 +172,7 @@ async function extractTokensViaCLI(dbPath) {
 /**
  * GET /api/oauth/cursor/auto-import
  * Auto-detect and extract Cursor tokens from local SQLite database.
- * Strategy: better-sqlite3 → sqlite3 CLI → manual fallback
+ * Strategy: node:sqlite → sqlite3 CLI → manual fallback
  */
 export async function GET() {
   try {
@@ -218,9 +218,9 @@ export async function GET() {
       }
     }
 
-    // Strategy 1: better-sqlite3 (bundled — no external tools required)
+    // Strategy 1: node:sqlite (built-in ≥22.5 — no native module or external tools)
     try {
-      const tokens = extractTokensViaBetterSqlite(dbPath);
+      const tokens = extractTokensViaNodeSqlite(dbPath);
       if (tokens.accessToken && tokens.machineId) {
         return NextResponse.json({
           found: true,

@@ -47,9 +47,9 @@ const { ensureSqliteRuntime, buildEnvWithRuntime } = require("./hooks/sqliteRunt
 const { ensureTrayRuntime } = require("./hooks/trayRuntime");
 const args = process.argv.slice(2);
 
-// Self-heal SQLite runtime deps (sql.js + better-sqlite3) into ~/.9router/runtime
-// so the server can resolve them via NODE_PATH. Best-effort — sql.js is required,
-// better-sqlite3 is optional. Logs to stderr only on failure.
+// Self-heal SQLite fallback (sql.js) into ~/.9router/runtime so the server can
+// resolve it via NODE_PATH on Node < 22.5. node:sqlite is built-in on ≥22.5.
+// Best-effort; logs to stderr only on failure.
 try { ensureSqliteRuntime({ silent: true }); } catch {}
 
 // Self-heal tray runtime (systray for macOS/Linux only). Windows skipped.
