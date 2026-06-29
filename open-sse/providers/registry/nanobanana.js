@@ -21,7 +21,7 @@ export default {
   category: "apikey",
   transport: {
     baseUrl: "https://api.nanobananaapi.ai/v1/chat/completions",
-    validateUrl: "https://api.nanobananaapi.ai/v1/models",
+    validateUrl: "https://api.nanobananaapi.ai/api/v1/common/credit",
   },
   models: [
     { id: "nanobanana-flash", name: "NanoBanana Flash", params: ["n","size"], kind: "image" },

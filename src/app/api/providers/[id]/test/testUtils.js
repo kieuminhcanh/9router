@@ -637,8 +637,11 @@ async function testApiKeyConnection(connection, effectiveProxy = null) {
         return { valid: res.ok, error: res.ok ? null : "Invalid API key" };
       }
       case "nanobanana": {
-        const res = await fetchWithConnectionProxy("https://api.nanobananaapi.ai/v1/models", { headers: { Authorization: `Bearer ${connection.apiKey}` } }, effectiveProxy);
-        return { valid: res.ok, error: res.ok ? null : "Invalid API key" };
+        // Credit endpoint returns HTTP 200 even on auth failure — check JSON `code` (200 = valid key)
+        const res = await fetchWithConnectionProxy("https://api.nanobananaapi.ai/api/v1/common/credit", { headers: { Authorization: `Bearer ${connection.apiKey}` } }, effectiveProxy);
+        const json = await res.json().catch(() => ({}));
+        const valid = json.code === 200;
+        return { valid, error: valid ? null : "Invalid API key" };
       }
       case "fal-ai": {
         const res = await fetchWithConnectionProxy("https://api.fal.ai/v1/models?limit=1", { headers: { Authorization: `Key ${connection.apiKey}` } }, effectiveProxy);

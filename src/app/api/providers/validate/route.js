@@ -358,6 +358,16 @@ export async function POST(request) {
           break;
         }
 
+        case "nanobanana": {
+          // Credit endpoint returns HTTP 200 even on auth failure — check JSON `code` (200 = valid key)
+          const headers = {};
+          if (apiKey) headers["Authorization"] = `Bearer ${apiKey}`;
+          const res = await fetch(PROVIDERS.nanobanana.validateUrl, { headers });
+          const json = await res.json().catch(() => ({}));
+          isValid = json.code === 200;
+          break;
+        }
+
         case "deepseek":
         case "groq":
         case "xai":
@@ -373,7 +383,6 @@ export async function POST(request) {
         case "ollama":
         case "ollama-local":
         case "assemblyai":
-        case "nanobanana":
         case "chutes":
         case "xiaomi-mimo":
         case "xiaomi-tokenplan":
