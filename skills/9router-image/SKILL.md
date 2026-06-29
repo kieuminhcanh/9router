@@ -99,3 +99,7 @@ Common fields above work everywhere. These add/override:
 | `black-forest-labs` (FLUX) | `image` (ref) | `size` → exact `width`/`height`; async |
 | `runwayml` | `image` (ref) | `size` → ratio; async; video models exist |
 | `sdwebui`, `comfyui` | — | Localhost noAuth (`:7860` / `:8188`) |
+
+## Combos
+
+Pass a combo name as `model` to auto-fall-back across its image models (create on the dashboard Image page → "Create Combo"): `{"model":"image-combo","prompt":"..."}`. Works with `?response_format=binary` too.

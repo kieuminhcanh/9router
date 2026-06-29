@@ -72,8 +72,12 @@ Default (`response_format=json`):
 |---|---|---|
 | `openai` | `whisper-1`, `gpt-4o-transcribe`, `gpt-4o-mini-transcribe` | Native OpenAI shape |
 | `groq` | `whisper-large-v3`, `whisper-large-v3-turbo`, `distil-whisper-large-v3-en` | Fastest; OpenAI shape |
-| `gemini` | `gemini-2.5-flash`, `gemini-2.5-pro`, `gemini-2.5-flash-lite` | Server converts to `generateContent` with audio inline |
+| `gemini` | `gemini-3.1-flash-lite-preview`, `gemini-3-flash-preview`, `gemini-2.5-flash`, `gemini-2.5-pro` | Newest free first; server converts to `generateContent` with audio inline |
 | `deepgram` | `nova-3`, `nova-2`, `whisper-large` | Token auth; server adapts response |
 | `assemblyai` | `universal-3-pro`, `universal-2` | Async upload+poll handled server-side |
 | `nvidia` | `nvidia/parakeet-ctc-1.1b-asr` | NIM endpoint |
-| `huggingface` | `openai/whisper-large-v3`, `openai/whisper-small` | HF Inference API |
+| `huggingface` | `openai/whisper-large-v3-turbo`, `openai/whisper-large-v3`, `openai/whisper-small` | Free via HF `router.huggingface.co/hf-inference` |
+
+## Combos
+
+Pass a combo name as `model` to auto-fall-back across its STT models (create on the dashboard STT page → "Create Combo"): `-F "model=stt-combo"`. Same `multipart/form-data` request; the audio file is reused across fallback attempts.

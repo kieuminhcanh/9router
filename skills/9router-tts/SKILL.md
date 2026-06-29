@@ -78,3 +78,7 @@ Default → raw audio bytes (Content-Type `audio/mp3`).
 | `nvidia`, `inworld`, `cartesia`, `playht` | `model/voice` | Provider-specific auth header |
 | `coqui`, `tortoise` | speaker / voice id | Localhost noAuth |
 | `hyperbolic` | model id | Body = `{text}` only |
+
+## Combos
+
+Pass a combo name as `model` to auto-fall-back across its TTS voices/models (create on the dashboard TTS page → "Create Combo"): `{"model":"tts-combo","input":"..."}`. Gemini default TTS is `gemini-3.1-flash-tts-preview` (newest).
