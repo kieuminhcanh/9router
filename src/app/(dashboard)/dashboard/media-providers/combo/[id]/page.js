@@ -22,6 +22,7 @@ const KIND_LABELS = {
   webFetch: "Web Fetch",
   image: "Text to Image",
   tts: "Text To Speech",
+  stt: "Speech to Text",
 };
 
 const EXAMPLE_PATHS = {
