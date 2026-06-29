@@ -203,4 +203,53 @@ describe("openaiToClaudeResponse", () => {
       limit: 120
     });
   });
+
+  describe("tool_result image content", () => {
+    const PNG_DATA = "data:image/png;base64,iVBORw0KGgo=";
+
+    // Anthropic rejects image_url inside tool_result.content; it must become an image block.
+    it("converts base64 image_url in role:tool result to a Claude image block", () => {
+      const result = openaiToClaudeRequest("claude-x", {
+        messages: [
+          { role: "assistant", content: null, tool_calls: [{ id: "t1", type: "function", function: { name: "shot", arguments: "{}" } }] },
+          { role: "tool", tool_call_id: "t1", content: [{ type: "image_url", image_url: { url: PNG_DATA } }] },
+        ],
+      }, false);
+
+      const toolResult = result.messages.flatMap(m => m.content).find(b => b.type === "tool_result");
+      expect(toolResult).toBeTruthy();
+      expect(toolResult.content[0]).toEqual({
+        type: "image",
+        source: { type: "base64", media_type: "image/png", data: "iVBORw0KGgo=" },
+      });
+      expect(JSON.stringify(toolResult)).not.toContain("image_url");
+    });
+
+    it("converts remote http image_url in tool_result to source.type url", () => {
+      const result = openaiToClaudeRequest("claude-x", {
+        messages: [
+          { role: "assistant", content: null, tool_calls: [{ id: "t1", type: "function", function: { name: "shot", arguments: "{}" } }] },
+          { role: "tool", tool_call_id: "t1", content: [{ type: "image_url", image_url: { url: "https://example.com/a.png" } }] },
+        ],
+      }, false);
+
+      const toolResult = result.messages.flatMap(m => m.content).find(b => b.type === "tool_result");
+      expect(toolResult.content[0]).toEqual({
+        type: "image",
+        source: { type: "url", url: "https://example.com/a.png" },
+      });
+    });
+
+    it("leaves text-only tool_result content untouched", () => {
+      const result = openaiToClaudeRequest("claude-x", {
+        messages: [
+          { role: "assistant", content: null, tool_calls: [{ id: "t1", type: "function", function: { name: "shot", arguments: "{}" } }] },
+          { role: "tool", tool_call_id: "t1", content: "plain text result" },
+        ],
+      }, false);
+
+      const toolResult = result.messages.flatMap(m => m.content).find(b => b.type === "tool_result");
+      expect(toolResult.content).toBe("plain text result");
+    });
+  });
 });

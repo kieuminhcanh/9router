@@ -184,6 +184,33 @@ Respond ONLY with the JSON object, no other text.`);
   return result;
 }
 
+// Convert a single OpenAI image_url content part to a Claude image block, or null.
+function openaiImageUrlToClaudeImage(part) {
+  const url = part?.image_url?.url;
+  if (typeof url !== "string") return null;
+  const parsed = parseDataUri(url);
+  if (parsed) {
+    return { type: CLAUDE_BLOCK.IMAGE, source: { type: "base64", media_type: parsed.mimeType, data: parsed.base64 } };
+  }
+  if (url.startsWith("http://") || url.startsWith("https://")) {
+    return { type: CLAUDE_BLOCK.IMAGE, source: { type: "url", url } };
+  }
+  return null;
+}
+
+// Normalize tool_result content for Claude. Claude's tool_result.content accepts
+// either a string or an array of text/image blocks. OpenAI-style image_url blocks
+// must be converted to Claude image blocks or Anthropic rejects the request.
+function normalizeToolResultContent(content) {
+  if (!Array.isArray(content)) return content;
+  return content.map(part => {
+    if (part?.type === OPENAI_BLOCK.IMAGE_URL) {
+      return openaiImageUrlToClaudeImage(part) || part;
+    }
+    return part;
+  });
+}
+
 // Get content blocks from single message
 function getContentBlocksFromMessage(msg, toolNameMap = new Map()) {
   const blocks = [];
@@ -192,7 +219,7 @@ function getContentBlocksFromMessage(msg, toolNameMap = new Map()) {
     blocks.push({
       type: CLAUDE_BLOCK.TOOL_RESULT,
       tool_use_id: msg.tool_call_id,
-      content: msg.content
+      content: normalizeToolResultContent(msg.content)
     });
   } else if (msg.role === ROLE.USER) {
     if (typeof msg.content === "string") {
@@ -207,23 +234,12 @@ function getContentBlocksFromMessage(msg, toolNameMap = new Map()) {
           blocks.push({
             type: CLAUDE_BLOCK.TOOL_RESULT,
             tool_use_id: part.tool_use_id,
-            content: part.content,
+            content: normalizeToolResultContent(part.content),
             ...(part.is_error && { is_error: part.is_error })
           });
         } else if (part.type === OPENAI_BLOCK.IMAGE_URL) {
-          const url = part.image_url.url;
-          const parsed = parseDataUri(url);
-          if (parsed) {
-            blocks.push({
-              type: CLAUDE_BLOCK.IMAGE,
-              source: { type: "base64", media_type: parsed.mimeType, data: parsed.base64 }
-            });
-          } else if (url.startsWith("http://") || url.startsWith("https://")) {
-            blocks.push({
-              type: CLAUDE_BLOCK.IMAGE,
-              source: { type: "url", url }
-            });
-          }
+          const image = openaiImageUrlToClaudeImage(part);
+          if (image) blocks.push(image);
         } else if (part.type === OPENAI_BLOCK.IMAGE && part.source) {
           blocks.push({ type: CLAUDE_BLOCK.IMAGE, source: part.source });
         } else if (part.type === OPENAI_BLOCK.FILE && part.file) {
